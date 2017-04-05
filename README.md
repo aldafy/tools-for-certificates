@@ -1,2 +1,1 @@
-# tools-for-certificates
-Tools for work with certificates
+# Some tools to work with certificates
