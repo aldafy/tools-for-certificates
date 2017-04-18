@@ -50,7 +50,7 @@ file_format = 'p7b' if args.chain else 'cer'
 
 if request.status_code == 200:
     certificate = request.content
-    with open('{}.{}'.format(args.certificate, file_format)) as cert:
+    with open('{}.{}'.format(args.certificate, file_format), 'w+') as cert:
         cert.write(certificate)
 else:
     print "Bad certificate url"
