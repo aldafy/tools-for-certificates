@@ -2,6 +2,7 @@
 import argparse
 import requests
 import sys
+import os
 from lxml import html
 
 parser = argparse.ArgumentParser()
@@ -15,11 +16,17 @@ parser.add_argument('--secured', action='store_true',
                     help='Use this option if your CA is secured (using https potocol)')
 args = parser.parse_args()
 proxy = None
-try:
+request_data = []
+
+if os.path.isfile(args.request):
     with open(args.request) as req_file:
-        request_data = req_file.read()
-except Exception as e:
-    print e
+        request_data = [req_file.read()]
+elif os.path.isdir(args.request):
+    for req_file in os.listdir(args.request):
+        with open(req_file) as r_file:
+            request_data.append(r_file.read())
+else:
+    print "Error reading request file(s)"
     sys.exit(1)
 
 if args.proxy:
@@ -28,30 +35,31 @@ if requests.get('http://{}'.format(args.authority), proxies=proxy).status_code !
     print "Certification Authority server is unavailable"
     sys.exit(1)
 
-data = {'Mode': 'newreq',
-        'CertRequest': request_data,
-        'CertAttrib': 'UserAgent:Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
-        'ThumbPrint': '',
-        'TargetStoreFlags': '0',
-        'SaveCert': 'yes'}
+for req in request_data:
+    data = {'Mode': 'newreq',
+            'CertRequest': req,
+            'CertAttrib': 'UserAgent:Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
+            'ThumbPrint': '',
+            'TargetStoreFlags': '0',
+            'SaveCert': 'yes'}
 
-certpage = requests.post('http://{}/certsrv/certfnsh.asp'.format(args.authority), data=data, proxies=proxy)
-page = html.fromstring(certpage.content)
-srv, cert_bin, cert_b64, cert_chain_bin, cert_chain_b64 = page.xpath('//a/@href')
+    certpage = requests.post('http://{}/certsrv/certfnsh.asp'.format(args.authority), data=data, proxies=proxy)
+    page = html.fromstring(certpage.content)
+    srv, cert_bin, cert_b64, cert_chain_bin, cert_chain_b64 = page.xpath('//a/@href')
 
-if args.chain:
-    certificate_url = cert_chain_b64 if args.base64 else cert_chain_bin
-else:
-    certificate_url = cert_b64 if args.base64 else cert_bin
+    if args.chain:
+        certificate_url = cert_chain_b64 if args.base64 else cert_chain_bin
+    else:
+        certificate_url = cert_b64 if args.base64 else cert_bin
 
-request = requests.get('http://{}/certsrv/{}'.format(args.authority, certificate_url), proxies=proxy)
+    request = requests.get('http://{}/certsrv/{}'.format(args.authority, certificate_url), proxies=proxy)
 
-file_format = 'p7b' if args.chain else 'cer'
+    file_format = 'p7b' if args.chain else 'cer'
 
-if request.status_code == 200:
-    certificate = request.content
-    with open('{}.{}'.format(args.certificate, file_format), 'w+') as cert:
-        cert.write(certificate)
-else:
-    print "Bad certificate url"
-    sys.exit(1)
+    if request.status_code == 200:
+        certificate = request.content
+        with open('{}.{}'.format(args.certificate, file_format), 'w+') as cert:
+            cert.write(certificate)
+    else:
+        print "Bad certificate url"
+        sys.exit(1)
