@@ -8,7 +8,7 @@ from lxml import html
 parser = argparse.ArgumentParser()
 parser.add_argument('-ca', '--authority', help='Address of your MS Certification Authority', required=True)
 parser.add_argument('-r', '--request', help='Input request file', required=True)
-parser.add_argument('-c', '--certificate', help='Output certificate filename', required=True)
+parser.add_argument('-c', '--certificate', help='Output certificate filename')
 parser.add_argument('-p', '--proxy', help='Proxy with port without protocol')
 parser.add_argument('--chain', action='store_true', help='Get p7b chain')
 parser.add_argument('--base64', action='store_true', help='Get base64 encoded certificate or p7b chain')
@@ -37,6 +37,8 @@ if requests.get('http://{}'.format(args.authority), proxies=proxy).status_code !
     print "Certification Authority server is unavailable"
     sys.exit(1)
 
+cert_count = 1
+
 for req in request_data:
     data = {'Mode': 'newreq',
             'CertRequest': req,
@@ -58,10 +60,13 @@ for req in request_data:
 
     file_format = 'p7b' if args.chain else 'cer'
 
+    file_name = args.certificate if args.certificate else 'certnew' if len(request_data) == 1 else cert_count
+
     if request.status_code == 200:
         certificate = request.content
-        with open('{}.{}'.format(args.certificate, file_format), 'w+') as cert:
+        with open('{}.{}'.format(file_name, file_format), 'w+') as cert:
             cert.write(certificate)
+        cert_count += 1
     else:
         print "Bad certificate url"
         sys.exit(1)
