@@ -8,7 +8,7 @@ from lxml import html
 parser = argparse.ArgumentParser()
 parser.add_argument('-ca', '--authority', help='Address of your MS Certification Authority', required=True)
 parser.add_argument('-r', '--request', help='Input request file', required=True)
-parser.add_argument('-c', '--certificate', help='Output certificate filename')
+parser.add_argument('-cp', '--cert_path', help='Output certificate path')
 parser.add_argument('-p', '--proxy', help='Proxy with port without protocol')
 parser.add_argument('--chain', action='store_true', help='Get p7b chain')
 parser.add_argument('--base64', action='store_true', help='Get base64 encoded certificate or p7b chain')
@@ -60,7 +60,7 @@ for req in request_data:
 
     file_format = 'p7b' if args.chain else 'cer'
 
-    file_name = args.certificate if args.certificate else 'certnew' if len(request_data) == 1 else 'certnew{}'.format(cert_count)
+    file_name = '{}certnew{}'.format(args.cert_path if args.cert_path else '', cert_count)
 
     if request.status_code == 200:
         certificate = request.content
