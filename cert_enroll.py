@@ -25,7 +25,7 @@ elif os.path.isdir(args.request):
     for req_file in os.listdir(args.request):
         file_name, extension = os.path.splitext(req_file)
         if extension == '.p10':
-            with open(req_file) as r_file:
+            with open(args.request + req_file) as r_file:
                 request_data.append(r_file.read())
 else:
     print "Error reading request file(s)"
@@ -60,7 +60,7 @@ for req in request_data:
 
     file_format = 'p7b' if args.chain else 'cer'
 
-    file_name = args.certificate if args.certificate else 'certnew' if len(request_data) == 1 else cert_count
+    file_name = args.certificate if args.certificate else 'certnew' if len(request_data) == 1 else 'certnew{}'.format(cert_count)
 
     if request.status_code == 200:
         certificate = request.content
